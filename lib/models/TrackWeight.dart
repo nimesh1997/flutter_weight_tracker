@@ -1,14 +1,35 @@
-class TrackWeight{
+import 'package:firebase_database/firebase_database.dart';
 
-  TrackWeight(this.weight, this.dateTime, this.detail);
+class TrackWeight {
 
+  TrackWeight(this.weight, this.dateTime, this.detail, this.timeStamp);
+
+  String key;
   double weight;
-  DateTime dateTime;
+  String dateTime;
   String detail;
+  int timeStamp;
+
 
   @override
   String toString() {
-    return 'TrackWeight{weight: $weight, dateTime: $dateTime, detail: $detail}';
+    return 'TrackWeight{key: $key, weight: $weight, dateTime: $dateTime, detail: $detail, timeStamp: $timeStamp}';
+  }
+
+  TrackWeight.fromSnapshot(DataSnapshot snapshot)
+      : key = snapshot.key,
+        dateTime =snapshot.value["dateTime"],
+        weight = snapshot.value["weight"].toDouble(),
+        detail = snapshot.value["detail"],
+        timeStamp = snapshot.value["timeStamp"];
+
+  toJson() {
+    return {
+      "weight": weight,
+      "dateTime": dateTime,
+      "detail": detail,
+      "timeStamp": timeStamp
+    };
   }
 
 

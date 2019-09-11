@@ -16,8 +16,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: <String, WidgetBuilder>{
         '/': (context) => HomeScreen(),
-        '/weightDetail': (context) => WeightDetailScreen()
-      },
+        '/weightDetail': (context) => WeightDetailScreen()},
       supportedLocales: [
         const Locale('en', 'US'),
       ],

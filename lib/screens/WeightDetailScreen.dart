@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cupertino_date_picker/flutter_cupertino_date_picker.dart';
+import 'package:flutter_weight_track/models/TrackWeight.dart';
 import 'package:intl/intl.dart';
 import 'package:numberpicker/numberpicker.dart';
 
@@ -26,7 +30,13 @@ String dateFormat = 'dd-MMMM-yyyy';
 
 String date;
 String time;
-String selectedWeight;
+double selectedWeight;
+String detail;
+int timeStamp;
+
+TrackWeight trackWeight;
+
+final mainDbReference = FirebaseDatabase.instance.reference();
 
 class _WeightDetailScreenState extends State<WeightDetailScreen> {
   @override
@@ -39,17 +49,25 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
     print('initDateTime: ' + initDateTime);
 
     date = DateFormat(dateFormat).format(dateTime).toString();
-    time = '12:00:00';
-    selectedWeight = '65.0';
+    setState(() {
+      time = DateFormat('hh:mm:ss a').format(dateTime).toString();
+      timeStamp = dateTime.millisecondsSinceEpoch;
+    });
+    selectedWeight = 65.0;
   }
 
+/*  @override
+  void dispose() {
+    weightChanged.cancel();
+    weightAdded.cancel();
+    super.dispose();
+  }
+*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-              icon: Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context)),
+          leading: IconButton(icon: Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
           title: Text('Weight Form'),
         ),
         body: Container(
@@ -82,13 +100,7 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
         height: 200.0,
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                spreadRadius: 2.0,
-                color: Colors.grey.withOpacity(0.6),
-                blurRadius: 4.0,
-                offset: Offset(0.0, 2.0))
-          ],
+          boxShadow: [BoxShadow(spreadRadius: 2.0, color: Colors.grey.withOpacity(0.6), blurRadius: 4.0, offset: Offset(0.0, 2.0))],
           borderRadius: BorderRadius.circular(8.0),
         ),
         child: Column(
@@ -178,9 +190,7 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
             SizedBox(
               width: 5.0,
             ),
-            Container(
-                height: 45.0,
-                child: Center(child: Text(selectedWeight + ' Kg'))),
+            Container(height: 45.0, child: Center(child: Text(selectedWeight.toString() + ' Kg'))),
           ],
         ),
       ),
@@ -204,10 +214,13 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
         Container(
           width: 250.0,
           child: TextField(
-            decoration: InputDecoration(
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
-                enabledBorder: UnderlineInputBorder()),
+            onChanged: (value) {
+              setState(() {
+                detail = value;
+                print('detail: ' + detail);
+              });
+            },
+            decoration: InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0), enabledBorder: UnderlineInputBorder()),
             maxLines: 1,
           ),
         )
@@ -218,9 +231,10 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
   buildSaveButton() {
     return Center(
       child: RaisedButton(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-        onPressed: () {},
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+        onPressed: () {
+          saveDataToFirebase();
+        },
         child: Text(
           'Save',
           style: TextStyle(color: Colors.white),
@@ -251,8 +265,7 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
       },
       onConfirm: (dateTime, List<int> index) {
         setState(() {
-          String formattedDate =
-              DateFormat('dd-MMMM-yyyy').format(dateTime).toString();
+          String formattedDate = DateFormat('dd-MMMM-yyyy').format(dateTime).toString();
           print(formattedDate);
           date = formattedDate;
         });
@@ -281,14 +294,16 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
       onCancel: () => print('onCancel'),
       onChange: (dateTime, List<int> index) {
         setState(() {
+          print('time: ' + DateFormat('hh:mm:ss a').format(dateTime).toString());
 //          _dateTime = dateTime;
         });
       },
       onConfirm: (dateTime, List<int> index) {
         setState(() {
-          String formattedTime =
-              DateFormat('hh:mm:ss').format(dateTime).toString();
+          String formattedTime = DateFormat('hh:mm:ss a').format(dateTime).toString();
           time = formattedTime;
+          timeStamp = dateTime.millisecondsSinceEpoch;
+          print('timeStamp: ' + timeStamp.toString());
         });
       },
     );
@@ -298,21 +313,29 @@ class _WeightDetailScreenState extends State<WeightDetailScreen> {
     await showDialog<double>(
       context: context,
       builder: (BuildContext context) {
-        return NumberPickerDialog.decimal(
-            title: Text('Select your weight:'),
-            minValue: 10,
-            maxValue: 300,
-            initialDoubleValue: 15.5);
+        return NumberPickerDialog.decimal(title: Text('Select your weight:'), minValue: 10, maxValue: 300, initialDoubleValue: 50.5);
       },
     ).then((value) {
       if (value != null) {
         setState(() {
-          selectedWeight = value.toString();
+          selectedWeight = value;
           print('selected weight: ' + value.toString());
         });
       }
     }).catchError((onError) {
       print('openWeightPicker catchError: ' + onError.toString());
+    });
+  }
+
+  void saveDataToFirebase() {
+    print('saveDataToFirebase called...');
+    var dbReference = mainDbReference;
+    trackWeight = TrackWeight(selectedWeight, date + ' ' + time, detail, timeStamp);
+    print('trackWeight: ' + trackWeight.toString());
+    dbReference.child('trackweight').push().set(trackWeight.toJson());
+    setState(() {
+      Navigator.pop(context);
+      print('successfully pushed in db');
     });
   }
 }

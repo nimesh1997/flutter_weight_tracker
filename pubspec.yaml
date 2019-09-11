@@ -26,6 +26,11 @@ dependencies:
   intl: ^0.15.8
   flutter_cupertino_date_picker: ^1.0.12
   numberpicker: ^1.1.0
+  firebase_database: 3.0.7
+  firebase_core: 0.4.0+1
+  firebase_analytics: 4.0.2
+
+
 
 dev_dependencies:
   flutter_test:
